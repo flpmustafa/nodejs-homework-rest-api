@@ -1,5 +1,5 @@
-const express = require('express')
-const router = express.Router()
+const express = require('express');
+const router = express.Router();
 const { contactSchema } = require('../../Utils/validation');
 
 const { listContacts,
@@ -28,9 +28,6 @@ router.post('/', async (req, res, next) => {
 });
 
 router.delete('/:contactId', removeContact);
-
 router.put('/:contactId', updateContact);
-
 router.patch('/:contactId/preferite', updateContactStatus);
-
-module.exports = router
+module.exports = router;
