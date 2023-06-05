@@ -11,6 +11,7 @@ const errorMessage = {
     constructor(status, message = errorMessage[status]) {
       super(message);
       this.status = status;
+      this.name = this.constructor.name;
     }
   }
   

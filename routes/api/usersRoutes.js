@@ -1,11 +1,16 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const jimp = require("jimp");
+const fs = require('fs');
 const User = require("../../models/users");
 const router = express.Router();
 const { HttpError } = require("../../helpers/httpErrors");
 const authenticate = require("../../Utils/authenticateToken");
+const gravatar = require('gravatar');
 
+const multer = require('multer');
+const upload = multer({ dest: 'tmp/' });
 
 router.post("/register", async (req, res, next) => {
     try {
@@ -16,7 +21,8 @@ router.post("/register", async (req, res, next) => {
           throw new HttpError(409, "Email in use");
         }
               const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = await User.create({ ...req.body, password: hashedPassword });
+              const avatarURL = gravatar.url(email, { s: '200', r: 'pg', d: 'mm' });
+              const newUser = await User.create({ ...req.body, password: hashedPassword, avatarURL});
       
         res.status(201).json({
           email: newUser.email,
@@ -79,5 +85,32 @@ router.post("/logout", authenticate, async (req, res, next) => {
     } catch (error) {
         next(error);
 }});
+
+router.patch("/avatars", authenticate, upload.single('avatar'), async (req, res, next) => {
+  try {
+    const { path: tempPath, originalname } = req.file;
+    const { _id } = req.user;
+    const uniqueFileName = `${_id}-${originalname}`; 
+    const imagePath = `public/avatars/${uniqueFileName}`; 
+
+    
+    const image = await jimp.read(tempPath);
+    await image.resize(250, 250).write(imagePath);
+
+   
+    fs.unlink(tempPath, (err) => {
+      if (err) {
+        console.error(err);
+      }
+    });
+
+    
+    await User.findByIdAndUpdate(_id, { avatarURL: `/avatars/${uniqueFileName}` });
+
+    res.status(200).json({ avatarURL: `/avatars/${uniqueFileName}` });
+  } catch (error) {
+    next(error);
+  }
+});
 
 module.exports = router;
